@@ -1,5 +1,5 @@
 
-## Kekos' Bot Commands
+# Kekos' Bot Commands
 
 `PREFIX` and `min_words` should be in config
 
