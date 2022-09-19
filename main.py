@@ -11,11 +11,8 @@ class BotClient(discord.Client):
 
         command = self.get_command(config.PREFIX, message)
 
-        if command == 'color':
+        if command == 'color' and message.channel.id == 1017849933887438936:
             await self.set_color(message)
-
-        else:
-            await message.channel.send('Invalid command!')
 
     async def set_color(self, message):
         if len(message.content.split(' ')) != 2:
