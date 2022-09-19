@@ -18,9 +18,10 @@ class BotClient(discord.Client):
         if len(message.content.split(' ')) != 2:
             return await message.channel.send('Invalid color parameters!')
 
-        color = await self.get_color(message)
+        try:
+            color = await self.get_color(message)
 
-        if not isinstance(color, int):
+        except ValueError:
             return
 
         single_roles = self.get_single_roles(message)
@@ -48,7 +49,8 @@ class BotClient(discord.Client):
             return int(color.capitalize(), 16)
 
         except ValueError:
-            return await message.channel.send(f'{color} is invalid color! Color must be hex')
+            await message.channel.send(f'{color} is invalid color! Color must be hex')
+            raise ValueError('Wrong color')
 
     @staticmethod
     def get_single_roles(message):
