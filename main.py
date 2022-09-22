@@ -4,6 +4,9 @@ import discord
 import config
 
 
+used_config = config.main
+
+
 class BotClient(discord.Client):
     async def on_message(self, message):
         if not message.content.startswith(config.PREFIX):
@@ -11,8 +14,14 @@ class BotClient(discord.Client):
 
         command = self.get_command(config.PREFIX, message)
 
-        if command == 'color' and message.channel.id == 1017849933887438936:
+        if not message.channel.id == used_config.get('id'):
+            return
+
+        if command == 'color':
             await self.set_color(message)
+
+        elif command == 'color_aliases':
+            await self.write_aliases(message)
 
     async def set_color(self, message):
         if len(message.content.split(' ')) != 2:
@@ -38,12 +47,19 @@ class BotClient(discord.Client):
         await role.edit(color=color)
 
     @staticmethod
+    async def write_aliases(message):
+        await message.channel.send('\n'.join(config.colors))
+
+    @staticmethod
     def get_command(prefix, message):
         return re.findall(f'{prefix}(\w+)', message.content)[0]
 
     @staticmethod
     async def get_color(message):
         color = message.content.split(' ')[-1]
+
+        if hasattr(discord.Color, color):
+            return getattr(discord.Color, color)()
 
         try:
             return int(color.capitalize(), 16)
@@ -66,4 +82,4 @@ intents.message_content = True
 intents.members = True
 
 client = BotClient(intents=intents)
-client.run(config.TOKEN)
+client.run(used_config.get('token'))
