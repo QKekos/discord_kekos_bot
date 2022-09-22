@@ -28,7 +28,7 @@ class BotClient(discord.Client):
             return await message.channel.send('Invalid color parameters!')
 
         try:
-            color = await self.get_color(message)  # !color 00ff00 -> 65280 (00ff00 in 10 base is 65280)
+            color = await self.get_color(message)  # !color 00ff00 -> discord.Colour("#00ff00")
 
         except ValueError:
             return
