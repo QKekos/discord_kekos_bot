@@ -8,13 +8,13 @@ used_config = config.main
 
 
 class BotClient(discord.Client):
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if not message.content.startswith(config.PREFIX):
             return
 
-        command = self.get_command(config.PREFIX, message)
+        command = self.get_command(config.PREFIX, message)  # !command arg -> command
 
-        if not message.channel.id == used_config.get('id'):
+        if not message.channel.id == used_config.get('chat_id'):
             return
 
         if command == 'color':
@@ -23,53 +23,70 @@ class BotClient(discord.Client):
         elif command == 'color_aliases':
             await self.write_aliases(message)
 
-    async def set_color(self, message):
+    async def set_color(self, message: discord.Message):
         if len(message.content.split(' ')) != 2:
             return await message.channel.send('Invalid color parameters!')
 
         try:
-            color = await self.get_color(message)
+            color = await self.get_color(message)  # !color 00ff00 -> 65280 (00ff00 in 10 base is 65280)
 
         except ValueError:
             return
 
-        single_roles = self.get_single_roles(message)
+        single_roles = self.get_single_roles(message)  # roles that only message author has
 
         if not single_roles:
             return await message.channel.send('You have no unique roles!')
 
-        single_roles = [role for role in single_roles if len(role.name.split(' ')) >= config.min_words]
+        # Filter if single roles has >= config.min_words_in_role words in themselves
+        single_roles = [role for role in single_roles if len(role.name.split(' ')) >= config.min_words_in_role]
 
         if not single_roles:
-            return await message.channel.send(f'You have no unique roles with more than {config.min_words} words')
+            return await message.channel.send(
+                f'You have no unique roles with more than {config.min_words_in_role} words in it\'s name'
+            )
 
         role = single_roles[0]
         await role.edit(color=color)
 
-    @staticmethod
-    async def write_aliases(message):
-        await message.channel.send('\n'.join(config.colors))
+        await message.channel.send(
+            f'Succesfully updated role "{role}" with color "{message.content.split(" ")[-1]}"!'
+        )
 
     @staticmethod
-    def get_command(prefix, message):
-        return re.findall(f'{prefix}(\w+)', message.content)[0]
+    async def write_aliases(message: discord.Message):
+        """
+        Prints all aliases from config.aliases_to_print
+        """
+        await message.channel.send('\n'.join(config.aliases_to_print))
 
     @staticmethod
-    async def get_color(message):
+    def get_command(prefix: str, message: discord.Message) -> str:
+        """
+        {prefix}command ... -> command
+        """
+
+        return re.findall(f'{prefix}(\w+)', message.content)[0]  #
+
+    @staticmethod
+    async def get_color(message: discord.Message) -> discord.Colour:
         color = message.content.split(' ')[-1]
+
+        if color.startswith('#'):
+            color = color[1:]
 
         if hasattr(discord.Color, color):
             return getattr(discord.Color, color)()
 
         try:
-            return int(color.capitalize(), 16)
+            return discord.Color(int(color.capitalize(), 16))
 
         except ValueError:
             await message.channel.send(f'{color} is invalid color! Color must be hex')
             raise ValueError('Wrong color')
 
     @staticmethod
-    def get_single_roles(message):
+    def get_single_roles(message: discord.Message) -> [discord.Role]:
         return [
             role for role in message.author.roles if sum([
                 1 for memeber in message.guild.members if role in memeber.roles
